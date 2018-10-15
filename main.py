@@ -1,5 +1,3 @@
-#---setup
-
 from flask import Flask, request, redirect, render_template, session, flash
 from flask_sqlalchemy import SQLAlchemy
 
@@ -33,6 +31,8 @@ class User(db.Model):
         self.password = password
 
 #---helper functions-------------------------------------------------------
+from main import Blog
+
 def is_username_valid(username):
     if len(username) >= 3 and len(username) <= 20:
         if " " not in username:
@@ -74,11 +74,11 @@ def is_title_blank(title):
     if len(title) == 0:
         return "Please fill out title"
     ""
-
 def is_body_blank(body):
     if len(body) == 0:
         return "Please fill out body"
     ""
+
 #--before request handler------------------------------------------
 
 @app.before_request
