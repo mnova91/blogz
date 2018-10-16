@@ -85,7 +85,7 @@ def is_body_blank(body):
 
 @app.before_request
 def require_login():
-    allowed_routes = ['login','signup', 'index']
+    allowed_routes = ['login','signup', 'index', 'list_posts']
     if request.endpoint not in allowed_routes and 'username' not in session:
         return redirect('/login')
 
@@ -94,9 +94,7 @@ def require_login():
 #TODO - create a home page
 @app.route('/', methods=['GET'])
 def index():
-
     all_users = User.query.all()
-
     return render_template('index.html',title="blog users", all_users=all_users)
 
 @app.route('/login', methods=['POST', 'GET'])
@@ -163,16 +161,16 @@ def logout():
     return redirect('/')
 
 @app.route('/blog')
-def list_post():
-    
+def list_posts():
     blog_post_id = request.args.get('id')
-    username = request.args.get('username')
+    user = request.args.get('user')
     if blog_post_id:
         new_blog_post = Blog.query.filter_by(id=blog_post_id).first()
         return render_template('display_post.html', new_blog_post=new_blog_post)
-    elif username:
-        all_users = User.query.filter_by(username=username).first()
-        return render_template('singleUser.html', all_users=all_users)
+    elif user:
+        owner = User.query.filter_by(id=user).first()
+        all_user_posts = Blog.query.filter_by(owner=owner).all()
+        return render_template('singleUser.html', all_user_posts=all_user_posts)
     else:
         blog_posts = Blog.query.all()
         return render_template('post_list.html',title="Blogz", blog_posts=blog_posts)
