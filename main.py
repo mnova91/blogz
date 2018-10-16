@@ -15,23 +15,25 @@ class Blog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(120))
     body = db.Column(db.String(500))
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
-    def __init__(self, title, body):
+    def __init__(self, title, body, owner):
         self.title = title
         self.body = body
+        self.owner = owner
 
 class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(120), unique=True)
     password = db.Column(db.String(120))
+    blogs = db.relationship('Blog', backref='owner')
 
     def __init__(self, username, password):
         self.username = username
         self.password = password
 
 #---helper functions-------------------------------------------------------
-from main import Blog
 
 def is_username_valid(username):
     if len(username) >= 3 and len(username) <= 20:
@@ -83,19 +85,19 @@ def is_body_blank(body):
 
 @app.before_request
 def require_login():
-    #TODO - allow unknown users to sign in
-    allowed_routes = ['login','signup']
+    allowed_routes = ['login','signup', 'index']
     if request.endpoint not in allowed_routes and 'username' not in session:
         return redirect('/login')
 
 #---hanlders-------------------------------------------------------
 
+#TODO - create a home page
 @app.route('/', methods=['GET'])
 def index():
 
-    blog_posts = Blog.query.all()
+    all_users = User.query.all()
 
-    return render_template('post_list.html',title="Blogz", blog_posts=blog_posts)
+    return render_template('index.html',title="blog users", all_users=all_users)
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
@@ -109,7 +111,7 @@ def login():
         password_error = password_error_f(password)
         user = User.query.filter_by(username=username).first()
 
-        if is_username_valid(username) is True and is_password_valid(password) is True:          
+        if is_username_valid(username) is True and is_password_valid(password) is True:
             if user and user.password == password:
                 session['username'] = username
                 flash('Logged in')
@@ -155,23 +157,25 @@ def signup():
 def logout():
     if 'username' not in session:
         flash('Not logged in')
-        return redirect('/')
+        return redirect('/login')
     del session['username']
     flash('Logged out')
     return redirect('/')
-    #TODO - flash message user signed out
 
-@app.route('/blog', methods=['POST', 'GET'])
+@app.route('/blog')
 def list_post():
-
-    if request.method == 'POST':
-        blog_posts = Blog.query.all()
-        return render_template('post_list.html',title="Blogz", blog_posts=blog_posts)
-
-    if request.method == 'GET':
-        blog_post_id = request.args.get('id')
+    
+    blog_post_id = request.args.get('id')
+    username = request.args.get('username')
+    if blog_post_id:
         new_blog_post = Blog.query.filter_by(id=blog_post_id).first()
         return render_template('display_post.html', new_blog_post=new_blog_post)
+    elif username:
+        all_users = User.query.filter_by(username=username).first()
+        return render_template('singleUser.html', all_users=all_users)
+    else:
+        blog_posts = Blog.query.all()
+        return render_template('post_list.html',title="Blogz", blog_posts=blog_posts)
 
 @app.route('/newpost', methods=['POST', 'GET'])
 def create_new_post():
@@ -180,10 +184,11 @@ def create_new_post():
         return render_template('create_post.html')
 
     if request.method == 'POST':
+        owner = User.query.filter_by(username=session['username']).first()
         blog_title = request.form['blog-title']
         blog_content = request.form['blog-body']
     if len(blog_title) != 0 and len(blog_content) != 0:
-        new_blog_post = Blog(blog_title,blog_content)
+        new_blog_post = Blog(blog_title,blog_content,owner)
         db.session.add(new_blog_post)
         db.session.commit() 
         return render_template('display_post.html', new_blog_post=new_blog_post)
