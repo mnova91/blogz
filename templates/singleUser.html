@@ -8,9 +8,10 @@
 <ul>
   <li>
     <span>
-      <h3><a href="/blog?user={{ post.id }}">{{ post.title }}</a></h3>
+      <h3><a href="/blog?id={{ post.id }}">{{ post.title }}</a></h3>
                   <p>{{ post.body }}</p>
     </span>
+    <p>Created by <a href="/blog?user={{ post.owner_id }}">{{ post.owner.username }}</a></p>
   </li>
 </ul>
 <hr/>

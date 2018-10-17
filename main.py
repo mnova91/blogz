@@ -91,11 +91,26 @@ def require_login():
 
 #---hanlders-------------------------------------------------------
 
-#TODO - create a home page
 @app.route('/', methods=['GET'])
 def index():
     all_users = User.query.all()
     return render_template('index.html',title="blog users", all_users=all_users)
+
+@app.route('/blog')
+def list_posts():
+    blog_post_id = request.args.get('id')
+    user_id = request.args.get('user')
+    if blog_post_id:
+        new_blog_post = Blog.query.filter_by(id=blog_post_id).first()
+        return render_template('display_post.html', new_blog_post=new_blog_post)
+    elif user_id:
+        owner = User.query.filter_by(id=user_id).first()
+        all_user_posts = Blog.query.filter_by(owner=owner).all()
+        return render_template('singleUser.html', all_user_posts=all_user_posts, username=owner)
+    else:
+        blog_posts = Blog.query.all()
+        return render_template('post_list.html',title="Blogz", blog_posts=blog_posts)
+
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
@@ -113,7 +128,7 @@ def login():
             if user and user.password == password:
                 session['username'] = username
                 flash('Logged in')
-                return redirect('/newpost')
+                return redirect('/')
             elif not user:                
                 return render_template('login.html', username_error='username does not exist')
             return render_template('login.html', password_error='incorrect password')
@@ -142,7 +157,7 @@ def signup():
                 db.session.add(new_user)
                 db.session.commit() 
                 flash('Account created')
-                return redirect('/newpost')
+                return redirect('/')
             return render_template("signup.html", username_error="username already exists")
         else:
             return render_template("signup.html", 
@@ -159,21 +174,6 @@ def logout():
     del session['username']
     flash('Logged out')
     return redirect('/')
-
-@app.route('/blog')
-def list_posts():
-    blog_post_id = request.args.get('id')
-    user = request.args.get('user')
-    if blog_post_id:
-        new_blog_post = Blog.query.filter_by(id=blog_post_id).first()
-        return render_template('display_post.html', new_blog_post=new_blog_post)
-    elif user:
-        owner = User.query.filter_by(id=user).first()
-        all_user_posts = Blog.query.filter_by(owner=owner).all()
-        return render_template('singleUser.html', all_user_posts=all_user_posts)
-    else:
-        blog_posts = Blog.query.all()
-        return render_template('post_list.html',title="Blogz", blog_posts=blog_posts)
 
 @app.route('/newpost', methods=['POST', 'GET'])
 def create_new_post():
